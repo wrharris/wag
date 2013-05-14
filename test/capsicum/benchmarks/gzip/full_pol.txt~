@@ -1,0 +1,46 @@
+let ifd = cw_desc 0 in
+let ofd = cw_desc 1 in
+
+let any_act = re_act (X all_progs all_vecs) in
+
+let open_ifd = cw_desc_alloc 0 in
+let open_ofd = cw_desc_alloc 1 in
+
+let not_close_prog = -p all_progs (cw_act 1) in
+let not_close = re_act (X not_close_prog all_vecs) in
+
+let insuf_rd = 
+    let open_ifd_acts = re_act (X open_ifd all_vecs) in
+    let insuf_rd_vecs =
+       let rd_cap_vec = -> ifd (:: CAP_READ no_rights) in
+       let suf_rd_vecs = lower_bound rd_cap_vec in
+       -v all_vecs suf_rd_vecs in
+    let insuf_rd_acts = re_act (X not_close_prog insuf_rd_vecs) in
+    . ( * any_act )
+      ( . open_ifd_acts ( . ( * not_close ) insuf_rd_acts ) ) in
+
+let insuf_wr =
+    let open_ofd_acts = re_act (X open_ofd all_vecs) in
+    let insuf_wr_vecs =
+        let wr_cap_vec = -> ofd (:: CAP_WRITE no_rights) in
+        let suf_wr_vecs = lower_bound wr_cap_vec in
+        -v all_vecs suf_wr_vecs in
+    let insuf_wr_acts = re_act (X not_close_prog insuf_wr_vecs) in
+    . ( * any_act)
+      ( . open_ofd_acts ( . ( * not_close ) insuf_wr_acts ) ) in
+
+let insec =
+    let vuln = cw_act 0 in
+    let insec_vecs =
+        let sec_vecs =
+            let cap_vec =
+                let sec_amb = amb_vec (neg AMB) in
+                let sec_rd = -> ifd (:: CAP_READ no_rights) in
+                let sec_wr = -> ofd (:: CAP_WRITE no_rights) in
+                <> sec_amb ( <> sec_rd sec_wr) in
+            upper_bound cap_vec in
+        -v all_vecs sec_vecs in
+    let insec_acts = re_act (X vuln insec_vecs) in
+    . ( * any_act ) insec_acts in
+
+insec 

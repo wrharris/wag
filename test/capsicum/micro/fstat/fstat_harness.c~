@@ -1,0 +1,36 @@
+#include <fcntl.h>
+#include <stdio.h>
+#include <sys/stat.h>
+
+extern void cw_act(int);
+
+struct fstat_rv {
+  struct stat rbuf;
+  int rc;
+};
+
+struct fstat_rv shim_fstat2(int fd, struct fstat_rv buf)
+{
+  cw_act(1);
+  int rc = fstat(fd, &(buf.rbuf));
+  struct fstat_rv rv;
+  rv.rbuf = buf.rbuf;
+  rv.rc = rc;
+  return rv;
+}
+
+int main(int argc, char* argv[])
+{
+  cw_act(0);
+  int fd = open(argv[1], O_RDWR);
+  struct fstat_rv arg;
+  struct fstat_rv res = shim_fstat2(fd, arg);
+  printf("fstat return code: %d\n", res.rc);
+  
+  // If the call was successful, then print some field of the result.
+  if (!res.rc) {
+    printf("fstat size: %ld\n", res.rbuf.st_size);
+  }
+  
+  return 0;
+}

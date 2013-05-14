@@ -1,0 +1,4 @@
+  [ all_cap_acts ] * 
+. (   [ { cw_act 0 } within (at_least (amb_vec AMB) ) ] 
+    | [ { cw_act 1 } within (at_most (amb_vec (not AMB) ) ) ] )
+

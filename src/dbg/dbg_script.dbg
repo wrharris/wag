@@ -1,0 +1,1 @@
+set arguments -host_name Capsicum -pol_name gzip -llvm_file ../test/benchmarks/gzip/gzip.bc

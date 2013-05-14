@@ -1,0 +1,170 @@
+(* begin_open: program action that denotes the beginning of the open
+ * function. *)
+let begin_open = cw_act 0 in
+
+(* begin_open_act: all policy actions constructed from begin_open and
+ * any capability vector. *)
+let begin_open_act = [ { begin_open } within all_cap_vecs ] in
+let not_begin_open = all_prog_acts - { begin_open } in
+let not_begin_open_act = [ not_begin_open within all_cap_vecs ] in
+let end_open = cw_act 7 in
+let end_open_act = [ { end_open } within all_cap_vecs ] in
+let not_end_open = all_prog_acts - { end_open } in
+let not_end_open_act = [ not_end_open within all_cap_vecs ] in
+
+(* has_amb: set of capability vectors in which php has the ambient
+ * capability. *)
+let has_amb = at_least ( amb_vec AMB ) in
+let no_has_amb = at_most ( amb_vec (not AMB) ) in
+
+(* amb_sec: php must not execute main with ambient cap. *)
+let amb_sec =
+    let begin_main = cw_act 8 in
+    [ all_cap_acts ] * . [ { begin_main } within has_amb ] in
+
+let no_amb_act = [ all_prog_acts within no_has_amb ] in
+
+(* amb_access: if php is in access, then it should have ambient
+ * capability. *)
+let amb_access =
+    let begin_access_act = [ { cw_act 11 } within all_cap_vecs ] in
+    let not_end_access_act = 
+      [ (all_prog_acts - { cw_act 12 }) within all_cap_vecs ] in
+      [ all_cap_acts ] *
+    . begin_access_act
+    . ( not_end_access_act * )
+    . no_amb_act in
+
+(* amb_fstat: if php is in fstat, then it should have ambient
+ * capability. *)
+let amb_fstat =
+    let begin_fstat_act = [ { cw_act 13 } within all_cap_vecs ] in
+    let not_end_fstat_act = 
+      [ (all_prog_acts - { cw_act 14 }) within all_cap_vecs ] in
+      [ all_cap_acts ] *
+    . begin_fstat_act
+    . ( not_end_fstat_act * )
+    . no_amb_act in
+
+(* amb_func: if php is in open, then it should have ambient
+ * capability. *)
+let amb_func =
+      [ all_cap_acts ] *
+    . begin_open_act
+    . ( not_end_open_act * )
+    . no_amb_act in
+
+let read_rights = { CAP_READ, CAP_FSTAT, CAP_FCNTL, CAP_SEEK } in
+let cur_desc = cw_desc 0 in
+let not_read = 
+    let part_vec = cur_desc: read_rights in
+    let exactly_read = (at_least part_vec) && (at_most part_vec) in
+    all_cap_vecs - exactly_read in
+let not_begin_not_read = [ not_begin_open within not_read ] in
+
+(* lockdown: if the descriptor doesn't satisfy any condition, then it
+ * should have no rights. *)
+let lockdown =
+    let not_begin_any_right =
+        let any_right =
+            let no_cur_rights = at_most ( cur_desc: { } ) in
+            all_cap_vecs - no_cur_rights in
+        [ not_begin_open within any_right ] in
+    let is_not_wl = cw_act 6 in
+      [ all_cap_acts ] *
+    . [ { is_not_wl } within all_cap_vecs ]
+    . ( not_begin_open_act * )
+    . not_begin_any_right in
+
+(* req_1: if the descriptor is a system library, then php should be
+ * able to read from it. *)
+let req_1 = 
+    let is_sys_lib = cw_act 1 in
+    [ all_cap_acts ] * 
+    . [ { is_sys_lib } within all_cap_vecs ] 
+    . ( not_begin_open_act * )
+    . not_begin_not_read in
+
+(* req_2: if the descriptor is a configuration file, then php should
+ * be able to read from it. *)
+let req_2 =
+    let is_config = cw_act 2 in
+      [ all_cap_acts ] * 
+    . [ { is_config } within all_cap_vecs ]
+    . ( not_begin_open_act * )
+    . not_begin_not_read in
+
+(* req_3: if the descriptor is a MediaWiki PHP script, then php should
+ * be able to read from it. *)
+let req_3 =
+    let is_mw_php_script = cw_act 3 in
+    [ all_cap_acts ] *
+    . [ { is_mw_php_script } within all_cap_vecs ]
+    . ( not_begin_open_act * )
+    . not_begin_not_read in
+
+(* req_4: if the descriptor is a skin, the php should be able to read
+ * from it. *)
+let req_4 = 
+    let is_skin_file = cw_act 4 in
+    [ all_cap_acts ] *
+    . [ { is_skin_file } within all_cap_vecs ]
+    . ( not_begin_open_act * )
+    . not_begin_not_read in
+
+(* req_5: if the descriptor is in a scratch directory, then php should
+ * be able to read from it and write to it. *)
+let req_5 = 
+    let is_scratch = cw_act 5 in
+    let not_rw =
+        let exactly_rw = 
+            let read_write = read_rights || { CAP_WRITE } in
+            { cur_desc: read_write } in
+        all_cap_vecs - exactly_rw in
+    [ all_cap_acts ] *
+    . [ { is_scratch } within all_cap_vecs ]
+    . ( not_begin_open_act * )
+    . [ not_begin_open within not_rw ] in
+
+(* req_socket: requirements for sockets. *)
+let req_socket =
+  (* post_connect: after the connect system call. *)
+  let post_connect = cw_act 11 in
+  
+  (* not_post_connect: a policy action constructed from some program
+   * action other than post-connect. *)
+  let not_post_connect = all_prog_acts - { post_connect } in
+
+  (* req_func: functionality violation is an execution in which the db
+   * check passes, then actions other than post-connect, then
+   * post-connect without amb cap. *)
+  let req_func = 
+    (* is_db: action triggered when a connect is a database. *)
+    let is_db = cw_act 9 in
+      [ all_cap_acts ] *
+      . [ { is_db } within all_cap_vecs ]
+      . [ not_post_connect within all_cap_vecs ]
+      . [ { post_connect } within (at_most (amb_vec (not AMB))) ] in
+
+  (* req_sec: security requirement: if the validator fails, then
+   * execute with amb cap until the end of connect. *)
+  let req_sec = 
+    (* is_not_db: action triggered when a connect. *)
+    let is_not_db = cw_act 10 in
+      [ all_cap_acts ] *
+    . [ { is_not_db } within all_cap_vecs ]
+    . [ not_post_connect within all_cap_vecs ]
+    . [ { post_connect } within (at_least (amb_vec AMB)) ] in
+
+  req_func | req_sec in
+
+(* The whole policy. *)
+  amb_sec
+| amb_func
+(*
+| lockdown 
+| req_1 | req_2 | req_3 | req_4 | req_5
+*)
+| req_socket
+| amb_access
+(* | amb_fstat *)

@@ -1,0 +1,73 @@
+fetchmail:
+
+  +buffer overflow in sdump:
+
+    -url: http://seclists.org/bugtraq/2010/Jun/34
+
+    -policy: require sdump to execute with no capabilties
+
+  +buffer overflow in pop3 uid code:
+
+    -url: http://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2005-2335
+
+    -policy: require pop3:getuidl to:
+
+      +execute gen_send with write capability on the socket
+
+      +execute following code with capability to:
+
+        -read from the socket
+
+        -write to stdout
+
+        -write to stderr
+
+tar:
+
+-supported:
+
+  +buffer overflow in safer_name_suffix:
+   
+    -url: http://portaudit.freebsd.org/0809ce7d-f672-4924-9b3b-7c74bc279b83.html
+
+    -policy: safer_name_suffix never executes with ambient capability
+
+  +buffer overflow in rmt_read__:
+
+    -url: http://xforce.iss.net/xforce/xfdb/56803
+
+    -policy: rmt_read__ never executes with ambient capability
+
+-not supported:
+
+  +buffer overflow when parsing PAX headers (unless vulnerability is
+   actually an alias for the buffer overflow in safer_name_suffix)
+
+wget:
+
+-supported:
+
+  +after following an http redirection, a malicious site can write to
+   arby files in the directory tree
+
+   -url: http://web.nvd.nist.gov/view/vuln/detail?vulnId=CVE-2010-2252
+
+   -policy: once program handles a redirection, it must not have
+    ambient capability when it opens files for output until it returns
+    from retrieve_url
+
+  +function ntlm_input has a buffer overflow
+
+    -url: http://www.mail-archive.com/wget%40sunsite.dk/msg08300.html
+
+    -policy: when program enters ntlm_input, require that it not have
+     ambient capability
+
+  +wget doesn't sanitize characters printed to the terminal. An http
+   session can use this to print escape characters to the terminal and
+   then do awful things.
+
+    -url: http://cve.mitre.org/cgi-bin/cvename.cgi?name=CAN-2004-1488
+
+    -policy: after the program starts an http session, it must not
+     have the write capability for stdout

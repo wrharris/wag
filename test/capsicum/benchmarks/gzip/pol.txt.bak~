@@ -1,0 +1,65 @@
+(* ifd: the input file descriptor. *)
+let ifd = cw_desc 0 in
+let ofd = cw_desc 1 in
+
+(* open_ifd: program action in which gzip opens the input file 
+ * descriptor. *)
+let open_ifd = cw_desc_open 0 in
+
+(* open_ofd: program action in which gzip opens the output file
+ * descriptor. *)
+let open_ofd = cw_desc_open 1 in
+
+(* not_close_prog: all program actions except for the action in which
+ * the file descriptor is closed. *)
+let not_close_prog = 
+    let close_prog = cw_act 1 in
+    all_cap_acts - { close_prog } in
+
+(* not_close: a regex that accepts all cap actions constructed from
+ * the program actions in not_close_prog. *)
+let not_close = [ not_close_prog within all_vecs ] in
+
+(* insuf_rd: a regex that accepts all cap-traces in which gzip
+ * executes with insufficient read capability. *)
+let insuf_rd = 
+    let open_ifd_acts = [ { open_ifd } within all_vecs ] in
+    let insuf_rd_vecs = 
+        let rd_cap_vec = ifd : { CAP_READ, CAP_SEEK } in
+        let suf_rd_vecs = at_least rd_cap_vec in
+        all_cap_vecs - suf_rd_vecs in
+    let insuf_rd_acts = [ not_close_prog within insuf_rd_vecs ] in
+    (any_cap_act *) . open_ifd_acts . (not_close *) . insuf_rd_acts in
+
+(* insuf_wr: a regex that accepts all cap traces in which gzip
+ * executes without write capability. *)
+let insuf_wr =
+    let open_ofd_acts = [ { open_ofd } within all_vecs ] in
+    let insuf_wr_vecs =
+        let wr_cap_vec = ofd : { CAP_WRITE, CAP_SEEK } in
+        let suf_wr_vecs = at_least wr_cap_vec in
+        all_cap_vecs - suf_wr_vecs in
+    let insuf_wr_acts = [ not_close_prog within insuf_wr_vecs ] in
+    ( any_cap_act * ) 
+    . open_ofd_acts 
+    . ( not_close * )
+    . insuf_wr_acts in
+        
+(* insec: a regex that accepts all cap traces in which gzip has too
+ * many capabilities. *)
+let insec =
+    let vuln = cw_act 0 in
+    let insec_vecs =
+        let sec_vecs =
+            let cap_vec = 
+                let sec_amb = amb_vecs (not AMB) in
+                let sec_rd = ifd : { CAP_READ, CAP_SEEK } in
+                let sec_wr = ofd : { CAP_WRITE, CAP_SEEK } in
+                sec_amb <> sec_rd <> sec_wr in
+            at_most cap_vec in
+        all_cap_vecs - sec_vecs in
+    let insec_acts = [ { vuln } within insec_vecs ] in
+    ( any_cap_act * ) . insec_acts in
+
+(* Construct the union of all vulnerabilities. *)
+insuf_rd | insuf_wr | insec

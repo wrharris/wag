@@ -1,0 +1,114 @@
+(* begin_open: program action that denotes the beginning of the open
+ * function. *)
+let begin_open = cw_act 0 in
+
+(* begin_open_act: all policy actions constructed from begin_open and
+ * any capability vector. *)
+let begin_open_act = [ { begin_open } within all_cap_vecs ] in
+let not_begin_open = all_prog_acts - { begin_open } in
+let not_begin_open_act = [ not_begin_open within all_cap_vecs ] in
+let end_open = cw_act 7 in
+let end_open_act = [ { end_open } within all_cap_vecs ] in
+let not_end_open = all_prog_acts - { end_open } in
+let not_end_open_act = [ not_end_open within all_cap_vecs ] in
+
+(* has_amb: set of capability vectors in which php has the ambient
+ * capability. *)
+let has_amb = at_least ( amb_vec AMB ) in
+
+(* amb_sec: if php is not in open, then it should not have ambient
+ * capability. *)
+let amb_sec =
+    let begin_main = cw_act 8 in
+    [ all_cap_acts ] * . [ { begin_main } within has_amb ] in
+
+(* amb_func: if php is in open, then it should have ambient
+ * capability. *)
+let amb_func =
+    let no_has_amb = all_cap_vecs - has_amb in
+    let no_amb_act = [ all_prog_acts within no_has_amb ] in
+    [ all_cap_acts ] *
+    . begin_open_act . ( not_end_open_act * ) . no_amb_act in
+
+let cur_desc = cw_desc 0 in
+let not_read = 
+    let part_vec = cur_desc: { CAP_READ, CAP_SEEK } in
+    let exactly_read = (at_least part_vec) && (at_most part_vec) in
+    all_cap_vecs - exactly_read in
+let not_begin_not_read = [ not_begin_open within not_read ] in
+
+(* lockdown: if the descriptor doesn't satisfy any condition, then it
+ * should have no rights. *)
+let lockdown =
+    let not_begin_any_right =
+        let any_right =
+            let no_cur_rights = at_most (cur_desc: { } ) in
+            all_cap_vecs - no_cur_rights in
+        [ not_begin_open within any_right ] in
+    let is_not_wl = cw_act 6 in
+    [ all_cap_acts ] *
+    . [ { is_not_wl } within all_cap_vecs ]
+    . ( not_begin_open_act * )
+    . not_begin_any_right in
+
+(* req_1: if the descriptor is a system library, then php should be
+ * able to read from it. *)
+let req_1 = 
+    let is_sys_lib = cw_act 1 in
+    [ all_cap_acts ] * 
+    . [ { is_sys_lib } within all_cap_vecs ] 
+    . ( not_begin_open_act * )
+    . not_begin_not_read in
+
+(* req_2: if the descriptor is a configuration file, then php should
+ * be able to read from it. *)
+let req_2 =
+    let is_config = cw_act 2 in
+    [ all_cap_acts ] * 
+    . [ { is_config } within all_cap_vecs ]
+    . ( not_begin_open_act * )
+    . not_begin_not_read in
+
+(* req_3: if the descriptor is a MediaWiki PHP script, then php should
+ * be able to read from it. *)
+let req_3 =
+    let is_mw_php_script = cw_act 3 in
+    [ all_cap_acts ] *
+    . [ { is_mw_php_script } within all_cap_vecs ]
+    . ( not_begin_open_act * )
+    . not_begin_not_read in
+
+(* req_4: if the descriptor is a skin, the php should be able to read
+ * from it. *)
+let req_4 = 
+    let is_skin_file = cw_act 4 in
+    [ all_cap_acts ] *
+    . [ { is_skin_file } within all_cap_vecs ]
+    . ( not_begin_open_act * )
+    . not_begin_not_read in
+
+(* req_5: if the descriptor is in a scratch directory, then php should
+ * be able to read from it and write to it. *)
+let req_5 = 
+    let is_scratch = cw_act 5 in
+    let not_rw =
+        let exactly_rw = 
+            let read_write = { CAP_READ, CAP_WRITE, CAP_SEEK } in
+            { cur_desc: read_write } in
+        all_cap_vecs - exactly_rw in
+    [ all_cap_acts ] *
+    . [ { is_scratch } within all_cap_vecs ]
+    . ( not_begin_open_act * )
+    . [ not_begin_open within not_rw ] in
+
+(* req_socket: require that socket() execute with ambient capability. *)
+let req_socket = 
+  (* open_socket: action in which the socket is opened. *)
+  let open_socket = cw_act 9 in
+  let not_amb = all_cap_vecs - has_amb in
+  [ { open_socket } within not_amb ] in
+
+(* The whole policy. *)
+  amb_sec | amb_func | lockdown 
+| req_1 | req_2 | req_3 | req_4 | req_5 
+| req_socket

@@ -1,0 +1,14 @@
+#include <stdio.h>
+
+void f() { return; }
+
+int main() {
+  int n = 2;
+  int i = 1;
+  int j = 0;
+
+  f();
+  f();
+
+  return 0;
+}

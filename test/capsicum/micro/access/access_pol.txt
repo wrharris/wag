@@ -1,0 +1,17 @@
+(* A policy with the access test program. Should require the weaver to
+ * put shim_access in an RPC call.
+*) 
+
+let has_amb = at_least ( amb_vec AMB ) in
+let no_has_amb = at_most ( amb_vec (not AMB) ) in
+
+(* amb_sec: php must not execute main with ambient cap. *)
+let amb_sec =
+    let begin_main = cw_act 0 in
+    [ all_cap_acts ] * . [ { begin_main } within has_amb ] in
+
+let amb_func = 
+    let begin_acc = cw_act 1 in
+    [ all_cap_acts ] * . [ { begin_acc } within no_has_amb ] in
+
+amb_sec | amb_func

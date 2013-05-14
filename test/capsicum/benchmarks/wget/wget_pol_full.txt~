@@ -1,0 +1,52 @@
+(* The wget policy. *)
+
+(* has_amb: any action in which the program has ambient
+ * capability. *)
+let has_amb = 
+    let has_amb_vecs = at_least ( amb_vec AMB ) in
+    [ all_prog_acts within has_amb_vecs ] in
+
+(* not_retrieve_url: any action other than returning from retrieve
+ * URL. *)
+let not_ret_retrieve_url =
+    let retrieve_url_p = cw_act 1 in
+    [ ( all_prog_acts - { retrieve_url_p } ) within all_cap_vecs ] in
+
+(* redir_vuln: gzip must not follow an HTTP redirection and have
+ * ambient capability. *)
+let redir_vuln =
+    (* follow_redir: any action formed from following an HTTP
+     * redirection. *)
+    let follow_redir = 
+        let redir_prog = cw_act 0 in
+        [ { redir_prog } within all_cap_vecs ] in
+
+    ( all_cap_acts * ) 
+    . follow_redir 
+    . ( not_ret_retrieve_url * )
+    . has_amb in
+
+(* ntlm_vuln: when wget executes the body of ntlm input, it
+ * must not have ambient capability. *)
+let ntlm_vuln =
+    let ntlm_begin = 
+        let ntlm_begin_p = cw_act 2 in
+        [ { ntlm_begin_p } within all_cap_vecs ] in
+    let not_ntlm_end =
+        let ntlm_end_p = cw_act 3 in
+        [ ( all_prog_acts - { ntlm_end_p } ) within all_cap_vecs ] in
+    ( all_cap_acts * ) . ntlm_begin . ( not_ntlm_end * ) . has_amb in
+
+(* sanitize_vuln: after wget begins an HTTP session, it must not be
+ * able to print characters to stdout. *)
+let sanitize_vuln =
+    let html_begin = [ { cw_act 4 } within all_cap_vecs ] in
+    let write_stdout = 
+        [ all_prog_acts within (at_least ( STDOUT: { CAP_WRITE } ) ) ] in
+    ( all_cap_acts * ) 
+    . html_begin 
+    . ( not_ret_retrieve_url * ) 
+    . write_stdout in
+
+(* Construct the union of all vulnerabilities. *)
+redir_vuln | ntlm_vuln | sanitize_vuln

@@ -1,0 +1,15 @@
+hand_woven.txt: filepaths of hand-woven programs
+
+-bzip2: ~/hand/bzip2-bl/bzip2
+
+-fetchmail: 
+
+-gzip: /usr/bin/gzip
+
+-php: 
+
+-tar: 
+
+-tcpdump: /usr/sbin/tcpdump
+
+-wget: 

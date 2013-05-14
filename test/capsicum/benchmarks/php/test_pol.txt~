@@ -1,0 +1,1 @@
+[ all_cap_acts ] * . [ { cw_act 0 } within (at_most (not AMB)) ]

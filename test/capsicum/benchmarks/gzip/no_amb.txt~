@@ -1,0 +1,19 @@
+let any_act = re_act ( X all_progs all_vecs ) in
+
+let begin_zip_prog = cw_act 0 in
+let end_zip_prog = cw_act 1 in
+
+let few_ambs = 
+    let end_zip = re_act (X end_zip_prog all_vecs ) in
+    let no_begin_zip_prog = -p all_progs begin_zip_prog in
+    let no_begin_zip = re_act (X no_begin_zip_prog all_vecs) in
+    let no_begin_zip_low = 
+        let no_amb = 
+            let no_has_amb = amb_vec ( neg AMB ) in
+            upper_bound no_has_amb in
+        re_act (X no_begin_zip_prog no_amb) in
+    . ( * ( . ( * any_act ) end_zip ) )
+      ( . ( * no_begin_zip ) no_begin_zip_low ) in
+
+few_ambs
+

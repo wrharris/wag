@@ -1,0 +1,45 @@
+-required behavior:
+
+  +loads WikiMedia splash screen
+
+-RPC open per primitives enabled:
+
+  +no primitives: loads WikiMedia splash screen
+
+  +RPC: "Fatal error: Class 'MediaWiki' not found in
+  /usr/local/www/mediawiki/index.php on line 57"
+
+  +capenter: "No input file specified."
+
+    -not surprising: putting PHP in cap mode and then not RPCing open
+
+  +RPC, capenter: "No input file specified."
+
+  +hunch: No input file specified is triggered by failures in access
+   or fstat.
+
+--------------------------------------------------------------------------------
+
+-problem: standalone interpreter crashes
+
+  +past fix: remove shared log files created by other runs
+
+-problem: instrumented code isn't run
+
+  +past fix (?): update /usr/local/etc/apache22/httpd.conf to point to
+   weaved interpreter
+
+-problem: internal server error
+
+  +past fix: don't do anything funny with multiple roots launching
+   apache
+
+  +past fix: may be opening a bad log file
+
+-problem: code generator fails when building a load
+
+  +past fix: make sure that main has argc, argv arguments
+
+-problem: RPC server doesn't launch
+
+  +past fix: libpq must be loaded as a static library, not a dll

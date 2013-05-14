@@ -1,0 +1,4 @@
+ #!/bin/bash
+
+./wag -host_name Capsicum $@ -noisy
+    

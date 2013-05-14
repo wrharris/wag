@@ -1,0 +1,7 @@
+-bzip2: ~/hand/bzip2-bl/bzp2
+
+-gzip: /usr/bin/gzip
+
+-tcpdump: /usr/sbin/tcpdump
+
+-wget: 

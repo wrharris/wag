@@ -1,0 +1,38 @@
+(* The wget policy. *)
+
+(* has_amb: any action in which the program has ambient
+ * capability. *)
+let has_amb = 
+    let has_amb_vecs = at_least ( amb_vec AMB ) in
+    [ all_prog_acts within has_amb_vecs ] in
+
+(* redir_p: program action signifying that a redirection has
+ * occurred. *)
+let redir_p = cw_act 0 in
+let not_redir_p = all_prog_acts - { redir_p } in
+let not_redir = [ not_redir_p within all_cap_vecs ] in
+
+(* brk: executions that represent a break in the program's
+ * functionality. *)
+let brk = 
+    (* prem_brk: a break without a redirect. *)
+    let prem_brk = 
+          ( not_redir * )
+        . [ not_redir_p within (at_most (amb_vec (not AMB))) ] in
+            
+    (* main_brk: break in the main loop. *)
+    let main_brk = 
+        let post_ret_file = cw_act 1 in
+        let post_ret_url = cw_act 2 in
+        [ all_cap_acts ] *
+      . [ { post_ret_file, post_ret_url } 
+          within (at_most (amb_vec (not AMB))) ] in
+    prem_brk | main_brk in
+
+(* redir_vuln: executions in which the redirection vulnerability is
+ * exploited. *)
+let redir_vuln =
+      [ all_cap_acts ] * 
+    . [ { redir_p } within (at_least (amb_vec AMB)) ] in
+
+brk | redir_vuln

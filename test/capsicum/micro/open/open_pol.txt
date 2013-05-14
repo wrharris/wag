@@ -1,0 +1,38 @@
+(* has_amb: set of capability vectors in which php has the ambient
+ * capability. *)
+let has_amb = at_least ( amb_vec AMB ) in
+let no_has_amb = at_most ( amb_vec (not AMB) ) in
+let no_amb_act = [ all_prog_acts within no_has_amb ] in
+
+
+(* A policy for a simple open test. Force shim_open to be RPCed. *)
+(* begin_open: program action that denotes the beginning of the open
+ * function. *)
+let begin_open = cw_act 0 in
+
+(* begin_open_act: all policy actions constructed from begin_open and
+ * any capability vector. *)
+let begin_open_act = [ { begin_open } within all_cap_vecs ] in
+let not_begin_open = all_prog_acts - { begin_open } in
+let not_begin_open_act = [ not_begin_open within all_cap_vecs ] in
+let end_open = cw_act 7 in
+let end_open_act = [ { end_open } within all_cap_vecs ] in
+let not_end_open = all_prog_acts - { end_open } in
+let not_end_open_act = [ not_end_open within all_cap_vecs ] in
+
+(* amb_sec: main must not execute with ambient cap. *)
+let amb_sec =
+    let begin_main = cw_act 8 in
+    [ all_cap_acts ] * . [ { begin_main } within has_amb ] in
+
+(* amb_open: if php is in open, then it should have ambient
+ * capability. *)
+let amb_open =
+      [ all_cap_acts ] *
+    . begin_open_act
+    . ( not_end_open_act * )
+    . no_amb_act in
+
+  amb_sec
+| amb_open
+

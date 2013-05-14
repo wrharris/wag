@@ -1,0 +1,38 @@
+(* The wget policy. *)
+
+(* next_url: wget gets its next URL. *)
+let next_url = cw_act 0 in
+let not_next_url = all_prog_acts - { next_url } in
+
+(* redir: wget receives an HTTP redirection. *)
+let redir_p = cw_act 2 in
+let redir = [ { redir_p } within all_cap_vecs ] in
+let redir_exploit = 
+    [ all_cap_acts ] * 
+  . redir 
+  . [ not_next_url within all_cap_vecs ] *
+  . [ not_next_url within (at_most (amb_vec (not AMB ) ) ) ] in
+
+(* no_redir_fails: program can't write without ever following a
+ * redir. *)
+let no_redir_fails = 
+  let write_file = cw_act 3 in
+  let insuf_write = 
+    let suf_write = 
+      let local_file = cw_desc 0 in
+      local_file : { CAP_WRITE, CAP_SEEK, CAP_FSTAT } in
+    all_cap_vecs - suf_write in
+
+    [ all_cap_acts ] *
+  . [ { next_url } within all_cap_vecs ]
+  . [ ( all_prog_acts - { next_url, redir_p } ) 
+      within all_cap_vecs ] *
+  . [ write_file within insuf_write ] in
+
+(* http_fails: the HTTP protocol executes with too few capabilties. *)
+let http_fails = 
+    let http_prot = cw_act 4 in
+        any_instr * 
+      . [ { http_prot } within (at_most (amb_vec (not AMB))) ] in
+
+redir_exploit | noredir_fails | http_fails

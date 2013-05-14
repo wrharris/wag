@@ -1,0 +1,15 @@
+let has_amb = at_least ( amb_vec AMB ) in
+let no_has_amb = at_most ( amb_vec (not AMB) ) in
+
+(* amb_sec: require that we arne't in cap_enter in main. *)
+let amb_sec =
+    let begin_main = cw_act 0 in
+    [ all_cap_acts ] * . [ { begin_main } within has_amb ] in
+
+(* shim_amb: require that shim_connect execute with ambient
+ * capability. *)
+let shim_amb =
+    let begin_shim = cw_act 1 in
+    [ all_cap_acts ] * . [ { begin_shim } within no_has_amb ] in
+
+amb_sec | shim_amb

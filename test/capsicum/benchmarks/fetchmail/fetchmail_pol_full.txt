@@ -1,0 +1,57 @@
+(* fetchmail policy: rule out a bunch of known vulnerabilities. *)
+
+let act_has_amb = [ all_prog_acts within (at_least (amb_vec AMB)) ] in
+
+(* sdump_vuln: execute the vulnerable sdump function with ambient
+ * capability. *)
+let sdump_vuln = 
+    let sdump_begin = [ { cw_act 0 } within all_cap_vecs ] in
+    let not_sdump_end = 
+        [ ( all_prog_acts - { cw_act 1 } ) within all_cap_vecs ] in
+      ( [ all_cap_acts ] * )
+    . sdump_begin
+    . ( not_sdump_end * )
+    . ( act_has_amb) in
+
+(* pop3_sock: the socket used by POP3. *)
+let sock = cw_desc 0 in
+let basic_rights =
+    { CAP_GETPEERNAME, CAP_GETSOCKNAME, CAP_LISTEN, CAP_READ, CAP_SEEK } in
+
+(* not_pop3_end: any action other than the end of POP3 code. *)
+let not_pop3_end = 
+  let pop3_end_p = cw_act 4 in
+  [ ( all_prog_acts - { pop3_end_p } ) within all_cap_vecs ] in
+
+(* pop3_vuln: execute the pop3 code with too much capability. *)
+let pop3_vuln = 
+    let pop3_vuln_begin = [ { cw_act 3 } within all_cap_vecs ] in
+    (* act_gt_read: an action with more than the capability to read
+     * from a socket. *)
+    let act_gt_read =
+      let gt_read = 
+        let lte_caps = 
+          at_most ((amb_vec (not AMB)) <> (sock: basic_rights)) in
+        let lte_caps = at_most ((amb_vec (not AMB))) in
+        all_cap_vecs - lte_caps in
+      [ all_prog_acts within gt_read ] in
+
+      ( [ all_cap_acts ] * )
+    . pop3_vuln_begin
+    . ( not_pop3_end * ) 
+    . act_gt_read in
+
+(* pop3_breaks: execute the pop3 code with too little capability. *)
+let pop3_breaks =
+    let pop3_begin = [ { cw_desc_open 0 } within all_cap_vecs ] in
+    (* act_lt_basics: an action without the basic rights needed by a
+     * socket.
+    let act_lt_basics = 
+      [ all_prog_acts 
+        within (all_cap_vecs - ( at_least (sock: basic_rights ) ) ) ] in
+      ( [ all_cap_acts ] * )
+    . pop3_begin
+    . ( not_pop3_end * )
+    . ( act_lt_basics ) in
+
+pop3_vuln 

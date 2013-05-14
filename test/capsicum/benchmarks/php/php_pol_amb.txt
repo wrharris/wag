@@ -1,0 +1,56 @@
+(* A policy that ensures that certain functions always execute with
+ * AMB. *)
+
+(* has_amb: set of capability vectors in which php has the ambient
+ * capability. *)
+let has_amb = at_least ( amb_vec AMB ) in
+let no_has_amb = at_most ( amb_vec (not AMB) ) in
+
+(* amb_sec: php must not execute main with ambient cap. *)
+let amb_sec =
+    let begin_main = cw_act 8 in
+    [ all_cap_acts ] * . [ { begin_main } within has_amb ] in
+
+let no_amb_act = [ all_prog_acts within no_has_amb ] in
+
+(* amb_access: if php is in access, then it should have ambient
+ * capability. *)
+let amb_access =
+    [ all_cap_acts ] *
+  . [ { cw_act 13 } within no_has_amb ] in
+
+let amb_chdir =
+    [ all_cap_acts ] *
+  . [ { cw_act 18 } within no_has_amb ] in
+
+(* amb_connect: if php in in connect, then it should have ambient
+ * auth. *)
+let amb_connect =
+    [ all_cap_acts ] *
+  . [ { cw_act 11 } within no_has_amb ] in
+
+(* amb_getcwd: if php is in getcwd, then it should have ambient auth. *)
+let amb_getcwd = 
+    [ all_cap_acts ] *
+  . [ { cw_act 17 } within no_has_amb ] in
+
+(* amb_fstat: if php is in stat, then it should have ambient
+ * capability. *)
+let amb_stat =
+    [ all_cap_acts ] *
+  . [ { cw_act 15 } within no_has_amb ] in
+
+(* amb_open: if php is in open, then it should have ambient
+ * capability. *)
+let amb_open =
+    [ all_cap_acts ] *
+  . [ { cw_act 7 } within no_has_amb ] in
+
+(* The whole policy. *)
+  amb_sec
+| amb_chdir
+| amb_connect
+| amb_access
+| amb_getcwd
+| amb_stat
+| amb_open

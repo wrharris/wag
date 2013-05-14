@@ -1,0 +1,36 @@
+workloads.txt: a description of each runtime workload used to evaluate
+a woven program. Each description includes the path of all files on
+the Capsicum VM.
+
+-bzip2: "sample" files included in the bzip2 src distribution
+
+  +filepath: ~/refs/bzip2-1.0.6/sample.*
+
+-fetchmail: download emails from a gmail account
+
+  +filepath: run fetchmail with
+
+   wrharris@tortoise.cs.wisc.edu:~/.fetchmailrc
+
+-gzip: "sample" files included in the gzip src distribution
+
+  +filepath: ~/refs/bzip2-1.0.6/sample.*
+
+-php: tests included in the php src distribution
+
+  +filepath: ~/refs/php-5.3.2/tests/
+
+-tar: tar source directory
+
+  +filepath: ~/refs/tar-1.2.5
+
+  +note: tar contains its own tests, but these can only be run with
+   autom4te, and versions of autom4te for FreeBSD are not available.
+
+-tcpdump: tests included in the tcpdump src distribution
+
+  +filepath: ~/refs/tcpdump/tests/
+
+-wget: tests included in the wget src distribution
+
+  +filepath: ~/refs/wget/tests/

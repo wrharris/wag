@@ -1,0 +1,50 @@
+(* no_has_amb: action without ambience. *)
+let no_has_amb = at_most ( amb_vec ( not AMB ) ) in
+
+(* has_amb: any program action executing with ambient capability. *)
+let has_amb = [ all_prog_acts within (at_least (amb_vec AMB)) ] in
+
+let sn_suffix_begin_p = cw_act 0 in
+let sn_suffix_end_p = cw_act 1 in
+let rmt_begin_p = cw_act 2 in
+let rmt_end_p = cw_act 3 in
+
+(* brk: a break in functionality. *)
+let brk = 
+    let not_vuln_begin = 
+        [ ( all_prog_acts - { sn_suffix_begin_p, rmt_begin_p } )
+          within all_cap_vecs ] in
+    let call_sn = 
+          [ { sn_suffix_begin_p } within all_cap_vecs ] 
+        . ( [ all_cap_acts ] * ) 
+        . [ { sn_suffix_end_p } within all_cap_vecs ] in
+    let call_rmt = 
+          [ { rmt_begin_p } within all_cap_vecs ] 
+        . ( [ all_cap_acts ] * ) 
+        . [ { rmt_end_p } within all_cap_vecs ] in
+
+      ( ( not_vuln_begin | call_sn | call_rmt ) * )
+    . [ all_prog_acts within no_has_amb ] in
+
+(* safer_name_suffix_vuln: exploiting a vulnerability in
+ * safer_name_suffix. *)
+let safer_name_suffix_vuln = 
+    let sn_suffix_begin = [ { sn_suffix_begin_p } within all_cap_vecs ] in
+    let not_sn_end =
+        [ (all_prog_acts - { sn_suffix_end_p }) within all_cap_vecs ] in
+      ( [ all_cap_acts ] * )
+    . ( sn_suffix_begin )
+    . ( not_sn_end * )
+    . has_amb in
+
+(* rmt_read_vuln: exploiting a vulnerability in rmt_read__. *)
+let rmt_read_vuln =
+    let rmt_begin = [ { rmt_begin_p } within all_cap_vecs ] in
+    let not_rmt_end =
+        [ (all_prog_acts - { rmt_end_p }) within all_cap_vecs ] in
+      ( [ all_cap_acts ] * )
+    . ( rmt_begin )
+    . ( not_rmt_end * ) 
+    . has_amb in
+
+brk | safer_name_suffix_vuln | rmt_read_vuln

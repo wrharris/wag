@@ -1,0 +1,31 @@
+(* req_socket: requirements for sockets. *)
+let req_socket =
+  (* post_connect: after the connect system call. *)
+  let post_connect = cw_act 11 in
+  
+  (* not_post_connect: a policy action constructed from some program
+   * action other than post-connect. *)
+  let not_post_connect = all_prog_acts - { post_connect } in
+
+  (* req_func: functionality violation is an execution in which the db
+   * check passes, then actions other than post-connect, then
+   * post-connect without amb cap. *)
+  let req_func = 
+    (* is_db: action triggered when a connect is a database. *)
+    let is_db = cw_act 9 in
+      [ all_cap_acts ] *
+      . [ { is_db } within all_cap_vecs ]
+      . [ not_post_connect within all_cap_vecs ]
+      . [ { post_connect } within (at_most (amb_vec (not AMB))) ] in
+
+  (* req_sec: security requirement: if the validator fails, then
+   * execute with amb cap until the end of connect. *)
+  let req_sec = 
+    (* is_not_db: action triggered when a connect. *)
+    let is_not_db = cw_act 10 in
+      [ all_cap_acts ] *
+    . [ { is_not_db } within all_cap_vecs ]
+    . [ not_post_connect within all_cap_vecs ]
+    . [ { post_connect } within (at_least (amb_vec AMB)) ] in
+
+  req_func | req_sec in

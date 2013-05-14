@@ -1,0 +1,46 @@
+digraph test9 {
+edge [color=Blue]
+{rank=min; main_entry_enter}
+
+main_return_exit [label="main_return_exit"]
+main_return_enter [label="main_return_enter"]
+fact_entry_enter [label="fact_entry_enter"]
+main_entry_split1 [label="main_entry_split1"]
+main_entry_split0 [label="main_entry_split0"]
+main_entry_exit [label="main_entry_exit"]
+main_entry_enter [label="main_entry_enter"]
+fact_return_exit [label="fact_return_exit"]
+fact_return_enter [label="fact_return_enter"]
+fact_bb2_exit [label="fact_bb2_exit"]
+fact_return_exit [label="fact_return_exit"]
+fact_entry_enter [label="fact_entry_enter"]
+fact_bb1_split1 [label="fact_bb1_split1"]
+fact_bb1_split0 [label="fact_bb1_split0"]
+fact_bb1_exit [label="fact_bb1_exit"]
+fact_bb2_enter [label="fact_bb2_enter"]
+fact_bb_exit [label="fact_bb_exit"]
+fact_bb1_enter [label="fact_bb1_enter"]
+fact_bb_enter [label="fact_bb_enter"]
+fact_entry_exit [label="fact_entry_exit"]
+fact_entry_enter [label="fact_entry_enter"]
+
+main_return_enter->main_return_exit
+main_entry_exit->main_return_enter
+main_entry_split1->main_entry_exit
+fact_return_exit->main_entry_split1
+main_entry_split0->fact_entry_enter
+main_entry_enter->main_entry_split0
+fact_return_enter->fact_return_exit
+fact_bb2_exit->fact_return_enter
+fact_bb2_enter->fact_bb2_exit
+fact_bb1_exit->fact_bb2_enter
+fact_bb1_split1->fact_bb1_exit
+fact_return_exit->fact_bb1_split1
+fact_bb1_split0->fact_entry_enter
+fact_bb1_enter->fact_bb1_split0
+fact_bb_exit->fact_bb2_enter
+fact_bb_enter->fact_bb_exit
+fact_entry_exit->fact_bb1_enter
+fact_entry_exit->fact_bb_enter
+fact_entry_enter->fact_entry_exit
+}

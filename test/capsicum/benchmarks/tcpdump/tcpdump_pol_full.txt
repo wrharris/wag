@@ -1,0 +1,41 @@
+(* has_amb: any action in which the program has ambient
+ * capability. *)
+let has_amb = 
+    let has_amb_vecs = at_least ( amb_vec AMB ) in
+    [ all_prog_acts within has_amb_vecs ] in
+
+(* has_no_amb: capability actions in which the program does not have
+ * ambient capability. *)
+let has_no_amb =
+    let no_amb_vecs = at_most ( amb_vec (not AMB)) in
+    [ all_prog_acts within no_amb_vecs ] in
+
+(* res_begin: RE accepting the beginning of the resolver. *)
+let res_begin = [ { cw_act 1 } within all_cap_vecs ] in
+let not_res_begin_progs = all_prog_acts - { cw_act 1 } in
+let not_res_begin = [ not_res_begin_progs within all_cap_vecs ] in
+
+(* res_end: RE accepting the end of the resolver. *)
+let res_end = [ { cw_act 2 } within all_cap_vecs ] in
+let not_res_end_progs = all_prog_acts - { cw_act 2 } in
+let not_res_end = [ not_res_end_progs within all_cap_vecs ] in
+
+(* vuln: execute vulnerable code, and then execute with ambient
+ * capability outside of the DNS resolver. *)
+let vuln =
+    let vuln_begin = [ { cw_act 0 } within all_cap_vecs ] in
+      ( [ all_cap_acts ] * )
+    . vuln_begin 
+    . (     ( not_res_begin 
+          | ( res_begin . ( [ all_cap_acts ] * ) . res_end ) ) * )
+    . [ not_res_begin_progs within (at_least (amb_vec AMB)) ] in
+
+(* resolve_breaks: executions in which the functionality of the DNS
+ * resolver breaks. *)
+let dns_resolver_breaks =
+      ( [ all_cap_acts ] * )
+    . res_begin
+    . ( not_res_end * )
+    . [ not_res_end_progs within (at_most (amb_vec (not AMB))) ] in
+
+vuln

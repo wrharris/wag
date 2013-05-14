@@ -1,0 +1,62 @@
+(* fetchmail policy: rule out a bunch of known vulnerabilities. *)
+
+let act_has_amb = [ all_prog_acts within (at_least (amb_vec AMB)) ] in
+
+let sdump_begin_p = cw_act 0 in
+let sdump_begin = [ { sdump_begin_p } within all_cap_vecs ] in
+let not_sdump_begin =
+    [ (all_prog_acts - { sdump_begin_p }) within all_cap_vecs ] in
+let sdump_begin = [ { cw_act 0 } within all_cap_vecs ] in
+let sdump_end_p = cw_act 1 in
+let sdump_end = [ { sdump_end_p } within all_cap_vecs ] in
+let not_sdump_end = 
+    [ ( all_prog_acts - { sdump_end_p } ) within all_cap_vecs ] in
+
+(* sdump_vuln: execute the vulnerable sdump function with ambient
+ * capability. *)
+let sdump_vuln = 
+      ( [ all_cap_acts ] * )
+    . sdump_begin
+    . ( ( not_sdump_begin | not_sdump_end ) * )
+    . ( [ (all_prog_acts - { sdump_begin_p, sdump_end_p }) 
+          within (at_least (amb_vec AMB) ) ] ) in
+
+(* pop3_sock: the socket used by POP3. *)
+let basic_rights =
+    { CAP_GETPEERNAME, CAP_GETSOCKNAME, CAP_LISTEN, CAP_READ, CAP_SEEK } in
+
+(* not_pop3_end: any action other than the end of POP3 code. *)
+let not_pop3_end = 
+  let pop3_end_p = cw_act 4 in
+  [ ( all_prog_acts - { pop3_end_p } ) within all_cap_vecs ] in
+
+let pop3_vuln_begin_p = cw_act 3 in
+let pop3_vuln_begin = [ { pop3_vuln_begin_p } within all_cap_vecs ] in
+let not_pop3_vuln_begin = 
+    [ (all_prog_acts - { pop3_vuln_begin_p }) within all_cap_vecs ] in
+
+(* brk: executions that define a break in functionality. *)
+let brk = 
+    let not_begin_vuln = 
+      [ (all_prog_acts - { sdump_begin_p, pop3_vuln_begin_p }) 
+        within all_cap_vecs ] in
+      ( not_begin_vuln * )
+    . [ (all_prog_acts - { sdump_begin_p, pop3_vuln_begin_p }) 
+        within (at_most (amb_vec (not AMB))) ] in
+
+(* pop3_vuln: execute the pop3 code with too much capability. *)
+let pop3_vuln = 
+    (* act_gt_read: an action with more than the capability to read
+     * from a socket. *)
+    let act_gt_read =
+      let gt_read = 
+        let lte_caps = at_most (amb_vec (not AMB)) in
+        all_cap_vecs - lte_caps in
+      [ all_prog_acts within gt_read ] in
+
+      ( [ all_cap_acts ] * )
+    . pop3_vuln_begin
+    . ( not_pop3_end * ) 
+    . act_gt_read in
+
+brk | sdump_vuln | pop3_vuln

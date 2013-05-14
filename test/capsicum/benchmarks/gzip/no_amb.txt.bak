@@ -1,0 +1,10 @@
+let any_act = re_act ( X all_progs all_vecs ) in
+
+let vuln_amb = 
+    let vuln = cw_act 0 in 
+    let insec_vecs = 
+        let has_amb = amb_vec AMB in
+        lower_bound has_amb in
+    re_act (X vuln insec_vecs) in
+. any_act vuln_amb
+

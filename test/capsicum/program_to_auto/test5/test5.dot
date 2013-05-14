@@ -1,0 +1,26 @@
+digraph test5 {
+edge [color=Blue]
+{rank=min; main_entry_enter}
+
+main_return_exit [label="main_return_exit"]
+main_return_enter [label="main_return_enter"]
+main_bb2_exit [label="main_bb2_exit"]
+main_bb1_exit [label="main_bb1_exit"]
+main_bb2_enter [label="main_bb2_enter"]
+main_bb_exit [label="main_bb_exit"]
+main_bb1_enter [label="main_bb1_enter"]
+main_bb_enter [label="main_bb_enter"]
+main_entry_exit [label="main_entry_exit"]
+main_entry_enter [label="main_entry_enter"]
+
+main_return_enter->main_return_exit
+main_bb2_exit->main_return_enter
+main_bb2_enter->main_bb2_exit
+main_bb1_exit->main_bb2_enter
+main_bb1_enter->main_bb1_exit
+main_bb_exit->main_bb2_enter
+main_bb_enter->main_bb_exit
+main_entry_exit->main_bb1_enter
+main_entry_exit->main_bb_enter
+main_entry_enter->main_entry_exit
+}

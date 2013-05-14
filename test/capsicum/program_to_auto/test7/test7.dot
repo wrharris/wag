@@ -1,0 +1,39 @@
+digraph test7 {
+edge [color=Blue]
+{rank=min; main_entry_enter}
+
+main_return_exit [label="main_return_exit"]
+main_return_enter [label="main_return_enter"]
+foo_entry_enter [label="foo_entry_enter"]
+main_entry_split1 [label="main_entry_split1"]
+main_entry_split0 [label="main_entry_split0"]
+main_entry_exit [label="main_entry_exit"]
+main_entry_enter [label="main_entry_enter"]
+foo_return_exit [label="foo_return_exit"]
+foo_return_enter [label="foo_return_enter"]
+foo_bb2_exit [label="foo_bb2_exit"]
+foo_bb1_exit [label="foo_bb1_exit"]
+foo_bb2_enter [label="foo_bb2_enter"]
+foo_bb_exit [label="foo_bb_exit"]
+foo_bb1_enter [label="foo_bb1_enter"]
+foo_bb_enter [label="foo_bb_enter"]
+foo_entry_exit [label="foo_entry_exit"]
+foo_entry_enter [label="foo_entry_enter"]
+
+main_return_enter->main_return_exit
+main_entry_exit->main_return_enter
+main_entry_split1->main_entry_exit
+foo_return_exit->main_entry_split1
+main_entry_split0->foo_entry_enter
+main_entry_enter->main_entry_split0
+foo_return_enter->foo_return_exit
+foo_bb2_exit->foo_return_enter
+foo_bb2_enter->foo_bb2_exit
+foo_bb1_exit->foo_bb2_enter
+foo_bb1_enter->foo_bb1_exit
+foo_bb_exit->foo_bb2_enter
+foo_bb_enter->foo_bb_exit
+foo_entry_exit->foo_bb1_enter
+foo_entry_exit->foo_bb_enter
+foo_entry_enter->foo_entry_exit
+}

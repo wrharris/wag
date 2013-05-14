@@ -1,0 +1,2 @@
+(* brk: a policy that protects all functionality. *)
+[ all_prog_acts within (at_least (amb_vec AMB) ) ]*
